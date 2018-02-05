@@ -5,6 +5,9 @@ package pheromone
 
 const (
 	ErrLocalSocketTimeout = 1001
+
+	ErrRemoteSocketEmpty  = 2001
+	ErrRemoteSocketExist  = 2002
 )
 
 type Error int

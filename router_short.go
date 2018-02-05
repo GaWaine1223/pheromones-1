@@ -33,7 +33,21 @@ func NewSRouter(to time.Duration) *SRouter {
 	return &r
 }
 
+// 添加路由时，已添加或者地址为空是都返回有错误，防止收到请求和主动连接重复建立
+// 如果名字相同地址不同，则将原来的地址删除
 func (r *SRouter) AddRoute(s string, addr interface{}) error {
+	if addr == nil {
+		return Error(ErrRemoteSocketEmpty)
+	}
+	r.RLock()
+	a, b := r.pool[s]
+	if b && a == addr.(string) {
+		return Error(ErrRemoteSocketExist)
+	}
+	r.RUnlock()
+	if b {
+		r.Delete(s)
+	}
 	r.Lock()
 	defer r.Unlock()
 	r.pool[s] = endPointS{addr.(string)}
@@ -44,7 +58,7 @@ func (r *SRouter) Delete(s string) error {
 	r.Lock()
 	defer r.Unlock()
 	delete(r.pool, s)
-	return errors.New("shutdown success")
+	return nil
 }
 
 func (r *SRouter) DispatchAll(msg []byte) map[string][]byte {

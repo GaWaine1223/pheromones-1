@@ -82,9 +82,8 @@ func (h *Host) handler(c net.Conn) {
 		if err != nil {
 			return
 		}
-		// TODO 没名字或者已添加，都返回失败
 		err = h.Router.AddRoute(req.Name, c)
-		// 如果没添加对方路由成功，则长连接关闭
+		// 如果没成功添加对方路由成功，则长连接关闭
 		if err != nil {
 			return
 		}

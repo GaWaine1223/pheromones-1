@@ -36,7 +36,21 @@ func NewPRouter(to time.Duration) *PRouter {
 	return &r
 }
 
+// 添加路由时，已添加或者地址为空是都返回有错误，防止收到请求和主动连接重复建立
+// 如果名字相同地址不同，则将原来的地址删除
 func (r *PRouter) AddRoute(s string, addr interface{}) error {
+	if addr == nil {
+		return Error(ErrRemoteSocketEmpty)
+	}
+	r.RLock()
+	a, b := r.pool[s]
+	if b && a == addr.(string) {
+		return Error(ErrRemoteSocketExist)
+	}
+	r.RUnlock()
+	if b {
+		r.Delete(s)
+	}
 	r.Lock()
 	r.pool[s] = endPointP{addr.(net.Conn), 0}
 	r.Unlock()
@@ -57,7 +71,7 @@ func (r *PRouter) Delete(s string) error {
 		}
 	}
 	delete(r.pool, s)
-	return errors.New("shutdown success")
+	return nil
 }
 
 func (r *PRouter) DispatchAll(msg []byte) map[string][]byte {
