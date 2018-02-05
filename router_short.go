@@ -9,6 +9,7 @@ import (
 	"net"
 	"sync"
 	"time"
+	"io"
 )
 
 // 短链接对象
@@ -19,18 +20,16 @@ type endPointS struct {
 type SRouter struct {
 	sync.RWMutex
 	sync.WaitGroup
-	p  Protocal
 	to time.Duration
 	// 短链接池
 	pool map[string]endPointS
 }
 
 // 短链接路由
-func NewSRouter(to time.Duration, p Protocal) *SRouter {
+func NewSRouter(to time.Duration) *SRouter {
 	var r SRouter
 	r.to = to
 	r.pool = make(map[string]endPointS, 0)
-	r.p = p
 	return &r
 }
 
@@ -48,11 +47,12 @@ func (r *SRouter) Delete(s string) error {
 	return errors.New("shutdown success")
 }
 
-func (r *SRouter) DispatchAll(msg []byte) {
+func (r *SRouter) DispatchAll(msg []byte) map[string][]byte {
+	resp := make(map[string][]byte)
 	r.RLock()
 	defer r.RUnlock()
-	for _, v := range r.pool {
-		go func() {
+	for k, v := range r.pool {
+		go func(name string) {
 			r.Add(1)
 			defer r.Done()
 			defer func() {
@@ -70,13 +70,16 @@ func (r *SRouter) DispatchAll(msg []byte) {
 				if err != nil {
 					continue
 				}
-				msg, err := h.read(c, h.Router.(*SRouter).to)
-
-				break
+				msg, err := r.read(c, r.to)
+				if err != nil {
+					break
+				}
+				resp[k] = msg
 			}
-		}()
+		}(k)
 	}
 	r.Wait()
+	return resp
 }
 
 func (r *SRouter) GetConnType() ConnType {
@@ -93,7 +96,8 @@ func (r *SRouter) FetchPeers() map[string]interface{} {
 	return p2
 }
 
-func (r *SRouter) Dispatch(s string, msg []byte) error {
+func (r *SRouter) Dispatch(s string, msg []byte) ([]byte, error) {
+	var resp []byte
 	r.RLock()
 	defer r.RUnlock()
 	c, err := net.DialTimeout("tcp", r.pool[s].addr, r.to)
@@ -106,14 +110,27 @@ func (r *SRouter) Dispatch(s string, msg []byte) error {
 		if err != nil {
 			continue
 		}
-		// 等待接受返回值
-		// TODO 处理返回值
-		r.p.Parse(c, r.to)
-		return nil
+		resp, err = r.read(c, r.to)
+		if err != nil {
+			break
+		}
 	}
-	return nil
+	return resp, err
 }
 
-func (r *SRouter) GetProtocal() Protocal {
-	return r.p
+func (h *SRouter) read(r io.Reader, to time.Duration) ([]byte, error) {
+	buf := make([]byte, defultByte)
+	messnager := make(chan int)
+	go func() {
+		n, _ := r.Read(buf[:])
+		messnager <- n
+		close(messnager)
+	}()
+	select {
+	case n := <-messnager:
+		return buf[:n], nil
+	case <-time.After(to):
+		return nil, Error(ErrLocalSocketTimeout)
+	}
+	return	buf, nil
 }

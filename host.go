@@ -16,13 +16,16 @@ const defultByte = 1024
 
 type Host struct {
 	HostName 	string
+	// 路由器，首发信息用的
 	Router 		Router
+
 	Type 		ConnType
 	temp		int32
+	Proto 		Protocal
 }
 
-func NewHost(name string, r Router, t ConnType) *Host {
-	return &Host{name, r, t, 0}
+func NewHost(name string, r Router, t ConnType, p Protocal) *Host {
+	return &Host{name, r, t, 0, p}
 }
 
 // 监听peer的链接请求

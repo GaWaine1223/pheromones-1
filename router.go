@@ -19,9 +19,8 @@ type Router interface {
 	// 短链接传的是地址；长链接传的是net.Conn
 	AddRoute(s string, addr interface{}) error
 	Delete(s string) error
-	DispatchAll(msg []byte)
+	DispatchAll(msg []byte) map[string][]byte
 	GetConnType() ConnType
 	FetchPeers() map[string]interface{}
-	Dispatch(s string, msg []byte) error
-	GetProtocal() Protocal
+	Dispatch(s string, msg []byte) ([]byte, error)
 }

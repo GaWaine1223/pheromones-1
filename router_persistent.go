@@ -24,17 +24,15 @@ type endPointP struct {
 type PRouter struct {
 	sync.RWMutex
 	sync.WaitGroup
-	p  Protocal
 	to time.Duration
 	// 长链接池
 	pool map[string]endPointP
 }
 
-func NewPRouter(to time.Duration, p Protocal) *PRouter {
+func NewPRouter(to time.Duration) *PRouter {
 	var r PRouter
 	r.to = to
 	r.pool = make(map[string]endPointP, 0)
-	r.p = p
 	return &r
 }
 
@@ -62,7 +60,7 @@ func (r *PRouter) Delete(s string) error {
 	return errors.New("shutdown success")
 }
 
-func (r *PRouter) DispatchAll(msg []byte) {
+func (r *PRouter) DispatchAll(msg []byte) map[string][]byte {
 	r.RLock()
 	defer r.RUnlock()
 	for _, v := range r.pool {
@@ -82,6 +80,7 @@ func (r *PRouter) DispatchAll(msg []byte) {
 		}()
 	}
 	r.Wait()
+	return nil
 }
 
 func (r *PRouter) GetConnType() ConnType {
@@ -98,14 +97,10 @@ func (r *PRouter) FetchPeers() map[string]interface{} {
 	return p2
 }
 
-func (r *PRouter) Dispatch(s string, msg []byte) error {
+func (r *PRouter) Dispatch(s string, msg []byte) ([]byte, error) {
 	r.RLock()
 	defer r.RUnlock()
 	r.pool[s].c.SetWriteDeadline(time.Now().Add(r.to))
 	_, err := r.pool[s].c.Write(msg)
-	return err
-}
-
-func (r *PRouter) GetProtocal() Protocal {
-	return r.p
+	return "", err
 }
