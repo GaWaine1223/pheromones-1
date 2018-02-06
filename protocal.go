@@ -3,6 +3,8 @@
 
 package pheromone
 
+import "io"
+
 type MsgPto struct {
 	Name 		string		`json:"name"`
 	Operation 	string		`json:"operation"`
@@ -11,8 +13,10 @@ type MsgPto struct {
 
 // 路由数据解析协议
 type Protocal interface {
-	// 解析通信内容
-	Parse(msg []byte) (MsgPto, error)
+	// 解析通信内容,同时负责添加主动连接过来的peer
+	Parse(r io.Reader, msg []byte) (MsgPto, error)
 	// 处理请求
-	Handle(r MsgPto) (MsgPto, error)
+	Handle(r MsgPto) ([]byte, error)
+	// 获取协议底层路由
+	GetRouter() Router
 }

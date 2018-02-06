@@ -77,11 +77,11 @@ func (r *PRouter) Delete(s string) error {
 func (r *PRouter) DispatchAll(msg []byte) map[string][]byte {
 	r.RLock()
 	defer r.RUnlock()
-	for _, v := range r.pool {
+	for k, v := range r.pool {
 		if v.status != 0 {
 			continue
 		}
-		go func() {
+		go func(name string) {
 			r.Add(1)
 			defer r.Done()
 			defer func() {
@@ -90,8 +90,11 @@ func (r *PRouter) DispatchAll(msg []byte) map[string][]byte {
 				}
 			}()
 			v.c.SetWriteDeadline(time.Now().Add(r.to))
-			v.c.Write(msg)
-		}()
+			_, err := v.c.Write(msg)
+			if err != nil {
+				r.Delete(name)
+			}
+		}(k)
 	}
 	r.Wait()
 	return nil
@@ -111,10 +114,13 @@ func (r *PRouter) FetchPeers() map[string]interface{} {
 	return p2
 }
 
-func (r *PRouter) Dispatch(s string, msg []byte) ([]byte, error) {
+func (r *PRouter) Dispatch(name string, msg []byte) ([]byte, error) {
 	r.RLock()
 	defer r.RUnlock()
-	r.pool[s].c.SetWriteDeadline(time.Now().Add(r.to))
-	_, err := r.pool[s].c.Write(msg)
+	r.pool[name].c.SetWriteDeadline(time.Now().Add(r.to))
+	_, err := r.pool[name].c.Write(msg)
+	if err != nil {
+		r.Delete(name)
+	}
 	return "", err
 }

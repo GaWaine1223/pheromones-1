@@ -4,7 +4,6 @@
 package pheromone
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -86,6 +85,7 @@ func (r *SRouter) DispatchAll(msg []byte) map[string][]byte {
 				}
 				msg, err := r.read(c, r.to)
 				if err != nil {
+					r.Delete(name)
 					break
 				}
 				resp[k] = msg
@@ -110,11 +110,11 @@ func (r *SRouter) FetchPeers() map[string]interface{} {
 	return p2
 }
 
-func (r *SRouter) Dispatch(s string, msg []byte) ([]byte, error) {
+func (r *SRouter) Dispatch(name string, msg []byte) ([]byte, error) {
 	var resp []byte
 	r.RLock()
 	defer r.RUnlock()
-	c, err := net.DialTimeout("tcp", r.pool[s].addr, r.to)
+	c, err := net.DialTimeout("tcp", r.pool[name].addr, r.to)
 	if err != nil {
 		return err
 	}
@@ -126,6 +126,7 @@ func (r *SRouter) Dispatch(s string, msg []byte) ([]byte, error) {
 		}
 		resp, err = r.read(c, r.to)
 		if err != nil {
+			r.Delete(name)
 			break
 		}
 	}
