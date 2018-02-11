@@ -17,10 +17,9 @@ const (
 // 提供了长链接／短链接两种通信方式
 type Router interface {
 	// 短链接传的是地址；长链接传的是net.Conn
-	AddRoute(s string, addr interface{}) error
-	Delete(s string) error
-	DispatchAll(msg []byte) map[string][]byte
+	AddRoute(name string, addr interface{}) error
+	Delete(name string) error
 	GetConnType() ConnType
-	FetchPeers() map[string]interface{}
-	Dispatch(s string, msg []byte) ([]byte, error)
+	DispatchAll(msg []byte) map[string][]byte
+	Dispatch(name string, msg []byte) ([]byte, error)
 }

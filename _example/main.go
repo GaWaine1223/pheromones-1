@@ -1,43 +1,88 @@
 package main
 
 import (
+	"fmt"
 	"time"
+	"encoding/json"
 
 	p2p "github.com/GaWaine1223/Lothar/pheromone"
 	pto "github.com/GaWaine1223/Lothar/pheromone/_example/protocal"
-	"encoding/json"
 )
 
 var (
-	hello = p2p.ReqMsg{
+	hello1 = p2p.MsgPto{
 		Name:"luda",
-		Operation:"greeting",
+		Operation:pto.ConnectReq,
 	}
-	hellomsg = pto.MsgGreeting{
-		Addr:"北京",
+	hellomsg1 = pto.MsgGreetingReq{
+		Addr:"127.0.0.1:12345",
+		Account:11900,
+	}
+
+	hello2 = p2p.MsgPto{
+		Name:"yoghurt",
+		Operation:pto.ConnectReq,
+	}
+	hellomsg2 = pto.MsgGreetingReq{
+		Addr:"127.0.0.1:12346",
 		Account:11900,
 	}
 )
 
+const (
+	timeout = time.Millisecond * 100
+)
+
 func main() {
-	j, _ := json.Marshal(hellomsg)
-	hello.Data = string(j)
-	p := pto.NewProtocal()
-	router := p2p.NewSRouter(time.Millisecond * 100, p)
-	h1 := p2p.NewHost("luda", router, p2p.ShortConnection)
-	h2 := p2p.NewHost("yoghurt", router, p2p.ShortConnection)
-	h3 := p2p.NewHost("diudiu", router, p2p.ShortConnection)
+	r1 := p2p.NewSRouter(timeout)
+	p1 := pto.NewProtocal("luda", r1, timeout)
+	s1 := p2p.NewServer(p1, timeout)
 	println("h1 监听 12345")
-	go h1.Listen("127.0.0.1:12345")
+	go s1.ListenAndServe("127.0.0.1:12345")
+
+	r2 := p2p.NewSRouter(timeout)
+	p2 := pto.NewProtocal("yoghurt", r2, timeout)
+	s2 := p2p.NewServer(p2, timeout)
 	println("h2 监听 12345")
-	go h2.Listen("127.0.0.1:12346")
+	go s2.ListenAndServe("127.0.0.1:12346")
+
+	r3 := p2p.NewSRouter(timeout)
+	p3 := pto.NewProtocal("diudiu", r3, timeout)
+	s3 := p2p.NewServer(p3, timeout)
 	println("h3 监听 12345")
-	go h3.Listen("127.0.0.1:12347")
-	h1.Connect("yoghurt", "127.0.0.1:12346")
-	helloMsg, _ := json.Marshal(hello)
-	h1.Router.DispatchAll(helloMsg)
-	//h2.Connect("diudiu", "127.0.0.1:12347")
-	println("done")
+	go s3.ListenAndServe("127.0.0.1:12347")
+
+	p1.Add("yoghurt", "127.0.0.1:12346")
+	j, _ := json.Marshal(hellomsg1)
+	hello1.Data = j
+	msg, _ := json.Marshal(hello1)
+	for msg != nil {
+		b, err := p1.Dispatch("yoghurt", msg)
+		if err != nil {
+			println("操作失败", err.Error())
+			break
+		}
+		msg = nil
+		msg, err = p1.Handle(b)
+		fmt.Println(string(msg), err)
+	}
+	fmt.Println("test1 done")
+
+	j, _ = json.Marshal(hellomsg2)
+	hello2.Data = j
+	msg, _ = json.Marshal(hello2)
+	for msg != nil {
+		b, err := p2.Dispatch("luda", msg)
+		if err != nil {
+			println("操作失败", err.Error())
+			break
+		}
+		msg = nil
+		msg, err = p2.Handle(b)
+		fmt.Println(string(msg), err)
+	}
+	fmt.Println("test2 done")
+
 	for {
 		time.Sleep(time.Second)
 	}
