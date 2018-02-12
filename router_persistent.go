@@ -72,23 +72,24 @@ func (r *PRouter) GetConnType() ConnType {
 }
 
 func (r *PRouter) DispatchAll(msg []byte) map[string][]byte {
-	r.RLock()
-	defer r.RUnlock()
 	for k, v := range r.Pool {
-		go func(name string) {
-			r.Add(1)
+		r.Add(1)
+		go func(name string, c net.Conn) {
 			defer r.Done()
 			defer func() {
 				if err := recover(); err != nil {
 					fmt.Printf("panic: %v", err)
 				}
 			}()
-			v.c.SetWriteDeadline(time.Now().Add(r.to))
-			_, err := v.c.Write(msg)
+			fmt.Printf("dispatchall||发送请求, peername=%s||peeraddr=%s||msg=%s\n", name, c.RemoteAddr(), string(msg))
+			r.RLock()
+			c.SetWriteDeadline(time.Now().Add(r.to))
+			_, err := c.Write(msg)
+			r.RUnlock()
 			if err != nil {
 				r.Delete(name)
 			}
-		}(k)
+		}(k, v.c)
 	}
 	r.Wait()
 	return nil
@@ -105,14 +106,14 @@ func (r *PRouter) FetchPeers() map[string]interface{} {
 }
 
 func (r *PRouter) Dispatch(name string, msg []byte) ([]byte, error) {
-	r.Lock()
-	defer r.Unlock()
+	r.RLock()
 	if _, ok := r.Pool[name] ; !ok {
 		return nil, Error(ErrUnknuowPeer)
 	}
 	fmt.Printf("发送请求, peername=%s||msg=%s\n", name, string(msg))
 	r.Pool[name].c.SetWriteDeadline(time.Now().Add(r.to))
 	_, err := r.Pool[name].c.Write(msg)
+	r.RUnlock()
 	if err != nil {
 		r.Delete(name)
 	}

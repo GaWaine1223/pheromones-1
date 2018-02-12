@@ -129,6 +129,7 @@ func mainPeriment() {
 	go s3.ListenAndServe("127.0.0.1:12347")
 
 	time.Sleep(time.Second)
+	fmt.Println("test1 start__________________________________________")
 	p1.Add("yoghurt", "127.0.0.1:12346")
 	j, _ := json.Marshal(hellomsg1)
 	hello1.Data = j
@@ -137,33 +138,36 @@ func mainPeriment() {
 	if err != nil {
 		println("操作失败", err.Error())
 	}
-	fmt.Println("test1 done")
+	fmt.Println("test1 done*******************************************")
 
+	time.Sleep(time.Second)
+	fmt.Println("test2 start__________________________________________")
 	j, _ = json.Marshal(hellomsg2)
 	hello2.Data = j
 	msg, _ = json.Marshal(hello2)
-	time.Sleep(time.Second)
 	_, err = p2.Dispatch("luda", msg)
 	if err != nil {
 		println("操作失败", err.Error())
 	}
-	fmt.Println("test2 done")
+	fmt.Println("test2 done*******************************************")
 
-	/*
+	time.Sleep(time.Second * 1)
+	fmt.Println("test3 start__________________________________________")
 	p2.Add("diudiu", "127.0.0.1:12347")
 	j, _ = json.Marshal(hellomsg2)
 	hello2.Data = j
 	msg, _ = json.Marshal(hello2)
-	b := p2.DispatchAll(msg)
-	fmt.Println(b)
-	fmt.Println("test3 done")
+	p2.DispatchAll(msg)
+	fmt.Println("test3 done*******************************************")
 
-	p2.Delete("diudiu1")
+	time.Sleep(time.Second * 1)
+	fmt.Println("test4 start__________________________________________")
+	p2.Delete("diudiu")
 	j, _ = json.Marshal(hellomsg2)
 	hello2.Data = j
 	msg, _ = json.Marshal(hello2)
-	b = p2.DispatchAll(msg)
-	fmt.Println(b)*/
+	p2.DispatchAll(msg)
+	fmt.Println("test4 done_______________________________________")
 
 	for {
 		time.Sleep(time.Second)

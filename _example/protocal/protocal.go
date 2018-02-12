@@ -73,10 +73,8 @@ func (p *Protocal) Handle(c net.Conn, msg []byte) ([]byte, error) {
 		if cType == p2p.ShortConnection {
 			err = p.Router.AddRoute(req.Name, subReq.Addr)
 		} else {
-			err = p.Router.AddRoute(req.Name, c)
-			if err == nil {
+			if p.Router.AddRoute(req.Name, c) == nil {
 				go p.IOLoop(c)
-
 			}
 		}
 		if err != nil {
@@ -147,8 +145,9 @@ func (p *Protocal) Add(name string, addr string) error{
 	if err != nil {
 		return err
 	}
-	err = p.Router.AddRoute(name, c)
-	go p.IOLoop(c)
+	if p.Router.AddRoute(name, c) == nil {
+		go p.IOLoop(c)
+	}
 	return err
 }
 
