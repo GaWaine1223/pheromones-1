@@ -43,11 +43,16 @@ func (r *PRouter) AddRoute(name string, addr interface{}) error {
 		return Error(ErrRemoteSocketEmpty)
 	}
 	if _, ok := r.Pool[name]; ok {
+		if addr.(net.Conn) == r.Pool[name].c {
+			return Error(ErrRemoteSocketExist)
+		}
 		r.Delete(name)
 	}
 	r.Lock()
 	r.Pool[name] = endPointP{addr.(net.Conn)}
 	r.Unlock()
+	fmt.Printf("添加路由, peername=@%s@||peeraddress=%s\n", name, addr.(net.Conn).RemoteAddr())
+
 	return nil
 }
 
@@ -100,9 +105,12 @@ func (r *PRouter) FetchPeers() map[string]interface{} {
 }
 
 func (r *PRouter) Dispatch(name string, msg []byte) ([]byte, error) {
+	r.Lock()
+	defer r.Unlock()
+	if _, ok := r.Pool[name] ; !ok {
+		return nil, Error(ErrUnknuowPeer)
+	}
 	fmt.Printf("发送请求, peername=%s||msg=%s\n", name, string(msg))
-	r.RLock()
-	defer r.RUnlock()
 	r.Pool[name].c.SetWriteDeadline(time.Now().Add(r.to))
 	_, err := r.Pool[name].c.Write(msg)
 	if err != nil {

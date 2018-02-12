@@ -34,8 +34,8 @@ const (
 )
 
 func main() {
-	mainShort()
-	//mainPeriment()
+	//mainShort()
+	mainPeriment()
 }
 
 func mainShort() {
@@ -133,33 +133,23 @@ func mainPeriment() {
 	j, _ := json.Marshal(hellomsg1)
 	hello1.Data = j
 	msg, _ := json.Marshal(hello1)
-	//for msg != nil {
-		_, err := p1.Dispatch("yoghurt", msg)
-		if err != nil {
-			println("操作失败", err.Error())
-			//break
-		}
-		msg = nil
-		//msg, err = p1.Handle(nil, b)
-		//fmt.Println(string(msg), err)
-	//}
+	_, err := p1.Dispatch("yoghurt", msg)
+	if err != nil {
+		println("操作失败", err.Error())
+	}
 	fmt.Println("test1 done")
 
-	/*j, _ = json.Marshal(hellomsg2)
+	j, _ = json.Marshal(hellomsg2)
 	hello2.Data = j
 	msg, _ = json.Marshal(hello2)
-	for msg != nil {
-		b, err := p2.Dispatch("luda", msg)
-		if err != nil {
-			println("操作失败", err.Error())
-			break
-		}
-		msg = nil
-		msg, err = p2.Handle(b)
-		fmt.Println(string(msg), err)
+	time.Sleep(time.Second)
+	_, err = p2.Dispatch("luda", msg)
+	if err != nil {
+		println("操作失败", err.Error())
 	}
 	fmt.Println("test2 done")
 
+	/*
 	p2.Add("diudiu", "127.0.0.1:12347")
 	j, _ = json.Marshal(hellomsg2)
 	hello2.Data = j

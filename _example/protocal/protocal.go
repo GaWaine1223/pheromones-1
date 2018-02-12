@@ -56,7 +56,6 @@ func (p *Protocal) Handle(c net.Conn, msg []byte) ([]byte, error) {
 	req := &p2p.MsgPto{}
 	resp := &p2p.MsgPto{}
 	err := json.Unmarshal(msg, req)
-	println(1111, string(msg))
 	if err != nil {
 		resp.Name = p.HostName
 		resp.Operation = UnknownOp
@@ -75,9 +74,13 @@ func (p *Protocal) Handle(c net.Conn, msg []byte) ([]byte, error) {
 			err = p.Router.AddRoute(req.Name, subReq.Addr)
 		} else {
 			err = p.Router.AddRoute(req.Name, c)
+			if err == nil {
+				go p.IOLoop(c)
+
+			}
 		}
 		if err != nil {
-			fmt.Printf("@%s@report: %s operation from @%s@ failed, err=%s\n", p.HostName, req.Operation, req.Name, err)
+			fmt.Printf("@%s@report: %s operation from @%s@ err=%s\n", p.HostName, req.Operation, req.Name, err)
 		}
 		resp.Operation = ConnectResp
 	case GetReq:
@@ -103,8 +106,37 @@ func (p *Protocal) Handle(c net.Conn, msg []byte) ([]byte, error) {
 	return ret, nil
 }
 
-func (p *Protocal) GetRouter() p2p.Router {
-	return p.Router
+// 长连接的话，需要在加入路由的时刻起携程 循环监控
+func (p *Protocal) IOLoop(c net.Conn) {
+	fmt.Printf("@%s@report,开启长连接监听: localhost=%s||remotehost=%s\n", p.HostName, c.LocalAddr(), c.RemoteAddr())
+	for {
+		msg, err := p.read(c)
+		if err != nil {
+			return
+		}
+		fmt.Printf("长连接收到信息, localhost=%s||remotehost=%s||msg=%s\n", c.LocalAddr(), c.RemoteAddr(), string(msg))
+		resp, err := p.Handle(c, msg)
+		if err != nil || resp == nil {
+			fmt.Printf("结束此次会话, localconn=%s||remoteconn=%s||resp=%s||err=%s\n", c.LocalAddr(), c.RemoteAddr(), resp, err)
+			continue
+		}
+		c.SetWriteDeadline(time.Now().Add(p.to))
+		_, err = c.Write(resp)
+		if err != nil {
+			return
+		}
+		fmt.Printf("长连接发送信息, localconn=%s||remoteconn=%s||msg=%s\n", c.LocalAddr(), c.RemoteAddr(), resp)
+	}
+}
+
+func (p *Protocal) read(r io.Reader) ([]byte, error) {
+	buf := make([]byte, defultByte)
+	n, err := r.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	// read读出来的是[]byte("abcdefg"+0x00)，带一个结束符，需要去掉
+	return	buf[:n], nil
 }
 
 func (p *Protocal) Add(name string, addr string) error{
@@ -120,33 +152,8 @@ func (p *Protocal) Add(name string, addr string) error{
 	return err
 }
 
-// 长连接的话，需要在加入路由的时刻起携程 循环监控
-func (p *Protocal) IOLoop(c net.Conn) {
-	for {
-		msg, err := p.read(c)
-		if err != nil {
-			return
-		}
-		println(222, string(msg))
-		resp, err := p.Handle(c, msg)
-		if err != nil && resp != nil {
-			continue
-		}
-		c.SetWriteDeadline(time.Now().Add(p.to))
-		_, err = c.Write(resp)
-		if err != nil {
-			return
-		}
-	}
-}
-
-func (p *Protocal) read(r io.Reader) ([]byte, error) {
-	buf := make([]byte, defultByte)
-	_, err := r.Read(buf[:])
-	if err != nil {
-		return nil, err
-	}
-	return	buf, nil
+func (p *Protocal) GetRouter() p2p.Router {
+	return p.Router
 }
 
 func (p *Protocal) DispatchAll(msg []byte) map[string][]byte {
