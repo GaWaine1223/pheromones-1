@@ -42,14 +42,16 @@ func (r *SRouter) AddRoute(name string, addr interface{}) error {
 	if addr.(string) == "" {
 		return Error(ErrRemoteSocketEmpty)
 	}
-	r.Lock()
-	defer r.Unlock()
+	r.RLock()
 	if a, ok := r.Pool[name] ; ok {
 		if a.addr == addr.(string) {
 			return Error(ErrRemoteSocketExist)
 		}
 	}
+	r.RUnlock()
 	fmt.Printf("添加路由, peername=@%s@||peeraddress=%s\n", name, addr.(string))
+	r.Lock()
+	defer r.Unlock()
 	r.Pool[name] = endPointS{addr.(string)}
 	return nil
 }
@@ -67,11 +69,13 @@ func (r *SRouter) GetConnType() ConnType {
 }
 
 func (r *SRouter) DispatchAll(msg []byte) map[string][]byte {
+	var l sync.Mutex
 	peers := r.fetchPeers()
 	resps := make(map[string][]byte)
 	for k, v := range peers {
+		r.Add(1)
 		go func(name, addr string) {
-			r.Add(1)
+			fmt.Printf("dispatchall||name=%s||addr=%s\n", name, addr)
 			defer r.Done()
 			defer func() {
 				if err := recover(); err != nil {
@@ -82,7 +86,10 @@ func (r *SRouter) DispatchAll(msg []byte) map[string][]byte {
 			if err != nil {
 				return
 			}
+			fmt.Printf("dispatchall||msg=%s\n", string(resp))
+			l.Lock()
 			resps[name] = resp
+			l.Unlock()
 		}(k, v.addr)
 	}
 	r.Wait()

@@ -9,6 +9,7 @@ const (
 	ErrRemoteSocketEmpty  = 2001
 	ErrRemoteSocketExist  = 2002
 	ErrRemoteSocketMisType  = 2003
+	ErrRemoteSocketConnect  = 2004
 
 	ErrUnKnownProtocal     = 3003
 	ErrMismatchProtocalReq = 3101
@@ -30,6 +31,7 @@ var errMap = map[Error]string{
 	ErrRemoteSocketEmpty  : "链接为空",
 	ErrRemoteSocketExist  : "链接已存在",
 	ErrRemoteSocketMisType  : "链接类型错误",
+	ErrRemoteSocketConnect  : "远程链接失败",
 
 	ErrUnKnownProtocal : "未知的协议类型",
 	ErrMismatchProtocalReq   : "请求协议数据类型不匹配",

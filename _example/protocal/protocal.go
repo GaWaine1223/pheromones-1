@@ -51,10 +51,12 @@ func NewProtocal(name string, r p2p.Router, to time.Duration) *Protocal {
 	return &Protocal{name, r, to}
 }
 
-func (p *Protocal) Handle(msg []byte) ([]byte, error) {
+func (p *Protocal) Handle(c net.Conn, msg []byte) ([]byte, error) {
+	cType := p.Router.GetConnType()
 	req := &p2p.MsgPto{}
 	resp := &p2p.MsgPto{}
 	err := json.Unmarshal(msg, req)
+	println(1111, string(msg))
 	if err != nil {
 		resp.Name = p.HostName
 		resp.Operation = UnknownOp
@@ -69,7 +71,11 @@ func (p *Protocal) Handle(msg []byte) ([]byte, error) {
 		if err != nil {
 			return nil, p2p.Error(p2p.ErrMismatchProtocalResp)
 		}
-		err = p.Router.AddRoute(req.Name, subReq.Addr)
+		if cType == p2p.ShortConnection {
+			err = p.Router.AddRoute(req.Name, subReq.Addr)
+		} else {
+			err = p.Router.AddRoute(req.Name, c)
+		}
 		if err != nil {
 			fmt.Printf("@%s@report: %s operation from @%s@ failed, err=%s\n", p.HostName, req.Operation, req.Name, err)
 		}
@@ -121,7 +127,8 @@ func (p *Protocal) IOLoop(c net.Conn) {
 		if err != nil {
 			return
 		}
-		resp, err := p.Handle(msg)
+		println(222, string(msg))
+		resp, err := p.Handle(c, msg)
 		if err != nil && resp != nil {
 			continue
 		}
@@ -148,4 +155,8 @@ func (p *Protocal) DispatchAll(msg []byte) map[string][]byte {
 
 func (p *Protocal) Dispatch(name string, msg []byte) ([]byte, error) {
 	return p.Router.Dispatch(name, msg)
+}
+
+func (p *Protocal) Delete(name string) error {
+	return p.Router.Delete(name)
 }

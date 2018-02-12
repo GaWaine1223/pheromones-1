@@ -100,6 +100,7 @@ func (r *PRouter) FetchPeers() map[string]interface{} {
 }
 
 func (r *PRouter) Dispatch(name string, msg []byte) ([]byte, error) {
+	fmt.Printf("发送请求, peername=%s||msg=%s\n", name, string(msg))
 	r.RLock()
 	defer r.RUnlock()
 	r.Pool[name].c.SetWriteDeadline(time.Now().Add(r.to))

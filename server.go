@@ -53,7 +53,7 @@ func (s *Server) handler(c net.Conn) {
 	if err != nil {
 		return
 	}
-	resp, err := s.proto.Handle(msg)
+	resp, err := s.proto.Handle(c, msg)
 	if err != nil {
 		resp = []byte("params error")
 	}
