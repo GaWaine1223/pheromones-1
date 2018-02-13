@@ -137,7 +137,7 @@ func (p *Protocal) Handle(c net.Conn, msg []byte) ([]byte, error) {
     case FetchReq:
         resp.Operation = FetchResp
     case NoticeReq:
-            resp.Operation = NoticeResp
+        resp.Operation = NoticeResp
     case ConnectResp:
         resp.Operation = GetReq
     case GetResp:
@@ -165,7 +165,7 @@ func (p *Protocal) IOLoop(c net.Conn) {
         resp, err := p.Handle(c, msg)
         if err != nil || resp == nil {
             continue
-		}
+	    }
         c.SetWriteDeadline(time.Now().Add(p.to))
         _, err = c.Write(resp)
         if err != nil {
