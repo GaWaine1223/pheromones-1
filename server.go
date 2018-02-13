@@ -4,28 +4,30 @@
 package pheromone
 
 import (
-	"net"
-	"time"
-	"strings"
-	"runtime"
-	"io"
 	"fmt"
+	"io"
+	"net"
+	"runtime"
+	"strings"
+	"time"
 )
 
 const defultByte = 10240
 
+// Server p2p监听连接server
 type Server struct {
 	// 如果支持双链接，需要再建立一个proto对象
-	proto 	Protocal
-	to 	time.Duration
+	proto Protocal
+	to    time.Duration
 }
 
+// NewServer ...
 func NewServer(p Protocal, to time.Duration) *Server {
 	return &Server{p, to}
 }
 
-// 监听peer的链接请求
-func (s *Server) ListenAndServe(addr string) error{
+// ListenAndServe 监听peer的链接请求
+func (s *Server) ListenAndServe(addr string) error {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
@@ -58,7 +60,7 @@ func (s *Server) handler(c net.Conn) {
 		resp = []byte("params error")
 	}
 	c.SetWriteDeadline(time.Now().Add(s.to))
-	for i:=0 ; i<3 ; i++ {
+	for i := 0; i < 3; i++ {
 		_, err = c.Write(resp)
 		if err != nil {
 			continue
@@ -82,5 +84,5 @@ func (s *Server) read(r io.Reader, to time.Duration) ([]byte, error) {
 	case <-time.After(to):
 		return nil, Error(ErrLocalSocketTimeout)
 	}
-	return	buf, nil
+	return buf, nil
 }

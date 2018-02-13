@@ -5,18 +5,18 @@ package pheromone
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"time"
-	"io"
 )
 
-// 长链接对象
+// 长连接对象
 type endPointP struct {
 	c net.Conn
 }
 
-// 长链接路由
+// PRouter 长连接路由
 type PRouter struct {
 	sync.RWMutex
 	sync.WaitGroup
@@ -25,7 +25,7 @@ type PRouter struct {
 	Pool map[string]endPointP
 }
 
-// 长链接路由
+// NewPRouter 创建长连接路由
 func NewPRouter(to time.Duration) *PRouter {
 	var r PRouter
 	r.to = to
@@ -33,8 +33,8 @@ func NewPRouter(to time.Duration) *PRouter {
 	return &r
 }
 
-// 添加路由时，已添加或者地址为空是都返回有错误，防止收到请求和主动连接重复建立
-// 如果名字相同地址不同，则将原来的地址删除
+// AddRoute 添加路由时，已添加或者地址为空是都返回有错误，防止收到请求和主动连接重复建立
+// 如果名字相同且连接符不同，则将原来的地址删除
 func (r *PRouter) AddRoute(name string, addr interface{}) error {
 	if _, ok := addr.(net.Conn); !ok {
 		return Error(ErrRemoteSocketMisType)
@@ -56,10 +56,11 @@ func (r *PRouter) AddRoute(name string, addr interface{}) error {
 	return nil
 }
 
+// Delete 删除某个peer
 func (r *PRouter) Delete(name string) error {
 	r.Lock()
 	defer r.Unlock()
-	if _, ok := r.Pool[name] ; !ok {
+	if _, ok := r.Pool[name]; !ok {
 		return Error(ErrRemoteSocketEmpty)
 	}
 	r.Pool[name].c.Close()
@@ -67,10 +68,12 @@ func (r *PRouter) Delete(name string) error {
 	return nil
 }
 
+// GetConnType 获取连接类型
 func (r *PRouter) GetConnType() ConnType {
 	return PersistentConnection
 }
 
+// DispatchAll 广播消息
 func (r *PRouter) DispatchAll(msg []byte) map[string][]byte {
 	for k, v := range r.Pool {
 		r.Add(1)
@@ -95,7 +98,8 @@ func (r *PRouter) DispatchAll(msg []byte) map[string][]byte {
 	return nil
 }
 
-func (r *PRouter) FetchPeers() map[string]interface{} {
+// 获取全部对象
+func (r *PRouter) fetchPeers() map[string]interface{} {
 	p2 := make(map[string]interface{})
 	r.RLock()
 	defer r.RUnlock()
@@ -105,9 +109,10 @@ func (r *PRouter) FetchPeers() map[string]interface{} {
 	return p2
 }
 
+// Dispatch 单点传输
 func (r *PRouter) Dispatch(name string, msg []byte) ([]byte, error) {
 	r.RLock()
-	if _, ok := r.Pool[name] ; !ok {
+	if _, ok := r.Pool[name]; !ok {
 		return nil, Error(ErrUnknuowPeer)
 	}
 	fmt.Printf("发送请求, peername=%s||msg=%s\n", name, string(msg))
@@ -134,5 +139,5 @@ func (r *PRouter) read(io io.Reader, to time.Duration) ([]byte, error) {
 	case <-time.After(to):
 		return nil, Error(ErrLocalSocketTimeout)
 	}
-	return	buf, nil
+	return buf, nil
 }

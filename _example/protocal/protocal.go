@@ -1,11 +1,11 @@
 package protocal
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"net"
-	"fmt"
 	"time"
-	"encoding/json"
 
 	p2p "github.com/GaWaine1223/Lothar/pheromone"
 )
@@ -33,18 +33,17 @@ const (
 	UnknownOp = "unknownop"
 
 	defultByte = 10240
-
 )
 
 type MsgGreetingReq struct {
-	Addr 	string		`json:"add"`
-	Account int		`json:"account"`
+	Addr    string `json:"add"`
+	Account int    `json:"account"`
 }
 
 type Protocal struct {
 	HostName string
-	Router 	p2p.Router
-	to 	time.Duration
+	Router   p2p.Router
+	to       time.Duration
 }
 
 func NewProtocal(name string, r p2p.Router, to time.Duration) *Protocal {
@@ -84,7 +83,7 @@ func (p *Protocal) Handle(c net.Conn, msg []byte) ([]byte, error) {
 	case GetReq:
 		resp.Operation = GetResp
 	case FetchReq:
-		resp.Operation =FetchResp
+		resp.Operation = FetchResp
 	case NoticeReq:
 		resp.Operation = NoticeResp
 	case ConnectResp:
@@ -134,10 +133,10 @@ func (p *Protocal) read(r io.Reader) ([]byte, error) {
 		return nil, err
 	}
 	// read读出来的是[]byte("abcdefg"+0x00)，带一个结束符，需要去掉
-	return	buf[:n], nil
+	return buf[:n], nil
 }
 
-func (p *Protocal) Add(name string, addr string) error{
+func (p *Protocal) Add(name string, addr string) error {
 	if p.Router.GetConnType() == p2p.ShortConnection {
 		return p.Router.AddRoute(name, addr)
 	}

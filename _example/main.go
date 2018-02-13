@@ -1,9 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
-	"encoding/json"
 
 	p2p "github.com/GaWaine1223/Lothar/pheromone"
 	pto "github.com/GaWaine1223/Lothar/pheromone/_example/protocal"
@@ -11,21 +11,21 @@ import (
 
 var (
 	hello1 = p2p.MsgPto{
-		Name:"luda",
-		Operation:pto.ConnectReq,
+		Name:      "luda",
+		Operation: pto.ConnectReq,
 	}
 	hellomsg1 = pto.MsgGreetingReq{
-		Addr:"127.0.0.1:12345",
-		Account:11900,
+		Addr:    "127.0.0.1:12345",
+		Account: 11900,
 	}
 
 	hello2 = p2p.MsgPto{
-		Name:"yoghurt",
-		Operation:pto.ConnectReq,
+		Name:      "yoghurt",
+		Operation: pto.ConnectReq,
 	}
 	hellomsg2 = pto.MsgGreetingReq{
-		Addr:"127.0.0.1:12346",
-		Account:11900,
+		Addr:    "127.0.0.1:12346",
+		Account: 11900,
 	}
 )
 

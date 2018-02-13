@@ -5,18 +5,18 @@ package pheromone
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"time"
-	"io"
 )
 
-// 短链接对象
+// 短连接对象
 type endPointS struct {
 	addr string
 }
 
-// 短链接路由
+// SRouter 短连接路由
 type SRouter struct {
 	sync.RWMutex
 	sync.WaitGroup
@@ -25,7 +25,7 @@ type SRouter struct {
 	Pool map[string]endPointS
 }
 
-// 短链接路由
+// NewSRouter 建立短连接路由
 func NewSRouter(to time.Duration) *SRouter {
 	var r SRouter
 	r.to = to
@@ -33,7 +33,7 @@ func NewSRouter(to time.Duration) *SRouter {
 	return &r
 }
 
-// 添加路由时，已添加或者地址为空是都返回有错误，防止收到请求和主动连接重复建立
+// AddRoute 添加路由时，已添加或者地址为空是都返回有错误，防止收到请求和主动连接重复建立
 // 如果名字相同地址不同，则将原来的地址删除
 func (r *SRouter) AddRoute(name string, addr interface{}) error {
 	if _, ok := addr.(string); !ok {
@@ -43,7 +43,7 @@ func (r *SRouter) AddRoute(name string, addr interface{}) error {
 		return Error(ErrRemoteSocketEmpty)
 	}
 	r.RLock()
-	if a, ok := r.Pool[name] ; ok {
+	if a, ok := r.Pool[name]; ok {
 		if a.addr == addr.(string) {
 			return Error(ErrRemoteSocketExist)
 		}
@@ -56,6 +56,7 @@ func (r *SRouter) AddRoute(name string, addr interface{}) error {
 	return nil
 }
 
+// Delete 删除peer
 func (r *SRouter) Delete(s string) error {
 	fmt.Printf("删除节点：%v\n", s)
 	r.Lock()
@@ -64,10 +65,12 @@ func (r *SRouter) Delete(s string) error {
 	return nil
 }
 
+// GetConnType 获取连接类型
 func (r *SRouter) GetConnType() ConnType {
 	return ShortConnection
 }
 
+// DispatchAll 广播消息
 func (r *SRouter) DispatchAll(msg []byte) map[string][]byte {
 	var l sync.Mutex
 	peers := r.fetchPeers()
@@ -107,6 +110,7 @@ func (r *SRouter) fetchPeers() map[string]endPointS {
 	return p2
 }
 
+// Dispatch 单点传输
 func (r *SRouter) Dispatch(name string, msg []byte) ([]byte, error) {
 	peer, err := r.getPeer(name)
 	if err != nil {
@@ -120,7 +124,7 @@ func (r *SRouter) getPeer(name string) (*endPointS, error) {
 	p2 := &endPointS{}
 	r.RLock()
 	defer r.RUnlock()
-	if _, ok := r.Pool[name] ; !ok {
+	if _, ok := r.Pool[name]; !ok {
 		return p2, Error(ErrUnknuowPeer)
 	}
 	p2.addr = r.Pool[name].addr
@@ -164,5 +168,5 @@ func (r *SRouter) read(io io.Reader, to time.Duration) ([]byte, error) {
 	case <-time.After(to):
 		return nil, Error(ErrLocalSocketTimeout)
 	}
-	return	buf, nil
+	return buf, nil
 }
