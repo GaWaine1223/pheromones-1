@@ -81,24 +81,24 @@ p1.Add("yoghurt", "127.0.0.1:12346")
 对于长连接，发送后没有返回值，对返回数据的监听与处理在protocal层维护的携程中实现
 
 ``` go
-    _, err := p1.Dispatch("yoghurt", msg)
+_, err := p1.Dispatch("yoghurt", msg)
 ```
 
 
 ## 实现
 ### Server层 通常意义上的Server功能
 ``` go
-    // 开启接口监听，将读到的数据传输给prtocal层解析
-    ListenAndServe(addr string) error
+// 开启接口监听，将读到的数据传输给prtocal层解析
+ListenAndServe(addr string) error
 ```
 
 ### Protocal层 handler功能
 提供一个空的接口，需要用户来实现协议
 ``` go
-    type Protocal interface {
-        // 解析请求通信内容,并返回数据,双工协议
-        Handle(c net.Conn, msg []byte) ([]byte, error)
-    }
+type Protocal interface {
+    // 解析请求通信内容,并返回数据,双工协议
+    Handle(c net.Conn, msg []byte) ([]byte, error)
+}
 ```
 _example 中实现支持了一个长/短的协议状态机器
 状态机为：
@@ -161,7 +161,7 @@ func (p *Protocal) IOLoop(c net.Conn) {
         msg, err := p.read(c)
         if err != nil {
             return
-    }
+        }
         resp, err := p.Handle(c, msg)
         if err != nil || resp == nil {
             continue
